@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F2B01E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ne yesek?">
+<title>Bugün ne yesek?</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🍳%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F3F5F1;
+  --surface: #FFFFFF;
+  --ink: #1B2A24;
+  --muted: #5B6B64;
+  --saffron: #F2B01E;
+  --on-saffron: #1B2A24;
+  --plum: #4B1D3F;
+  --on-plum: #FFFFFF;
+  --line: #D9DFD9;
+  --font: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121C18;
+    --surface: #1B2823;
+    --ink: #EEF2EE;
+    --muted: #9FB0A8;
+    --plum: #E9B8DA;
+    --on-plum: #2A0F23;
+    --line: #2C3C35;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121C18; --surface: #1B2823; --ink: #EEF2EE; --muted: #9FB0A8;
+  --plum: #E9B8DA; --on-plum: #2A0F23; --line: #2C3C35; color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  padding: env(safe-area-inset-top, 0px) 1.25rem calc(2rem + env(safe-area-inset-bottom, 0px));
+}
+main { max-width: 34rem; margin: 0 auto; padding-top: 3rem; text-align: center; }
+h1 {
+  font-size: clamp(2.4rem, 9vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  margin: 0 0 0.75rem;
+}
+.lead { color: var(--muted); margin: 0 auto 2.25rem; max-width: 24rem; }
+
+/* Tabak: sayfanın tek belirgin öğesi */
+.plate {
+  position: relative;
+  width: 11.5rem; height: 11.5rem;
+  border-radius: 50%;
+  border: 0;
+  background: var(--saffron);
+  color: var(--on-saffron);
+  font: 800 1.35rem/1.15 var(--font);
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow: 0 0 0 0.6rem var(--bg), 0 0 0 0.75rem var(--saffron), inset 0 0 0 0.7rem rgba(255,255,255,0.28);
+  transition: transform 0.15s ease;
+}
+.plate:hover { transform: scale(1.03); }
+.plate:active { transform: scale(0.97); }
+.plate:focus-visible { outline: 3px solid var(--ink); outline-offset: 0.9rem; }
+.plate[disabled] { cursor: progress; animation: spin 1.1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#sonuc { margin-top: 3rem; text-align: left; min-height: 1px; }
+.kart {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  overflow: hidden;
+  animation: gel 0.35s ease both;
+}
+@keyframes gel { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.kart img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; background: var(--line); }
+.kart .govde { padding: 1.4rem 1.4rem 1.6rem; }
+.kart h2 { font-size: 1.65rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 0.75rem; }
+.kart p { margin: 0 0 1.4rem; color: var(--muted); }
+.git {
+  display: inline-block;
+  background: var(--plum);
+  color: var(--on-plum);
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.8rem 1.3rem;
+  border-radius: 0.8rem;
+}
+.git:hover { filter: brightness(1.08); }
+.git:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.hata {
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--plum);
+  border-radius: 0.8rem;
+  padding: 1rem 1.2rem;
+  background: var(--surface);
+}
+.hata strong { display: block; margin-bottom: 0.2rem; }
+@media (prefers-reduced-motion: reduce) {
+  .plate[disabled] { animation: none; opacity: 0.7; }
+  .kart { animation: none; }
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>Bugün ne yesek?</h1>
+  <p class="lead">Tabağa dokun, yemek.com’dan rastgele bir tarif gelsin.</p>
+  <button class="plate" id="sec" type="button">Rastgele yemek seç</button>
+  <section id="sonuc" aria-live="polite"></section>
+</main>
+
+<script>
+const btn = document.getElementById("sec");
+const sonuc = document.getElementById("sonuc");
+let ilk = true;
+
+function el(tag, props = {}, ...cocuklar) {
+  const e = document.createElement(tag);
+  Object.assign(e, props);
+  e.append(...cocuklar);
+  return e;
+}
+
+function tarifGoster(t) {
+  const govde = el("div", { className: "govde" },
+    el("h2", { textContent: t.baslik }),
+    ...(t.ozet ? [el("p", { textContent: t.ozet })] : [])
+  );
+  // Yalnızca yemek.com bağlantısına izin ver
+  if (/^https:\/\/(www\.)?yemek\.com\//.test(t.url)) {
+    govde.append(el("a", {
+      className: "git", href: t.url, target: "_blank", rel: "noopener",
+      textContent: "Tarifi yemek.com’da aç"
+    }));
+  }
+  const kart = el("article", { className: "kart" });
+  if (t.resim && /^https:\/\//.test(t.resim)) {
+    kart.append(el("img", { src: t.resim, alt: t.baslik, loading: "lazy" }));
+  }
+  kart.append(govde);
+  sonuc.replaceChildren(kart);
+}
+
+function hataGoster(mesaj) {
+  sonuc.replaceChildren(el("div", { className: "hata" },
+    el("strong", { textContent: "Tarif getirilemedi" }),
+    mesaj + " Tabağa tekrar dokunabilirsin."
+  ));
+}
+
+btn.addEventListener("click", async () => {
+  btn.disabled = true;
+  try {
+    const r = await fetch("/api/rastgele", { cache: "no-store" });
+    const veri = await r.json();
+    if (!r.ok) throw new Error(veri.hata || "Bilinmeyen hata.");
+    tarifGoster(veri);
+    if (ilk) { btn.textContent = "Başka bir tane"; ilk = false; }
+  } catch (e) {
+    hataGoster(e.message || "Bağlantı kurulamadı.");
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
