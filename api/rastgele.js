@@ -11,10 +11,10 @@ const HEADERS = {
   Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 };
 
-let cache = { urls: null, at: 0 };
+let cache = { cocuklar: null, urls: {}, at: 0 };
 
 async function getText(url) {
-  const r = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(8000) });
+  const r = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(6000) });
   if (!r.ok) throw new Error(`${url} adresi ${r.status} döndürdü`);
   let buf = Buffer.from(await r.arrayBuffer());
   if (buf[0] === 0x1f && buf[1] === 0x8b) buf = zlib.gunzipSync(buf); // .xml.gz
@@ -34,33 +34,31 @@ async function sitemapKokleri() {
   return [`${SITE}/sitemap.xml`];
 }
 
+// Soğuk başlangıçta tüm sitemap'leri değil, sadece rastgele seçilen birini indirir
 async function tarifAdresleri() {
-  if (cache.urls && Date.now() - cache.at < CACHE_MS) return cache.urls;
-  try {
-    let sayfalar = [];
+  if (!cache.cocuklar || Date.now() - cache.at > CACHE_MS) {
+    const cocuklar = [];
+    const urls = {};
     for (const kok of await sitemapKokleri()) {
       let xml;
       try { xml = await getText(kok); } catch (_) { continue; }
       const adresler = locs(xml);
       if (xml.includes("<sitemapindex")) {
-        // Önce adında tarif/recipe geçen alt sitemap'leri tercih et
         const tarifli = adresler.filter((u) => /tarif|recipe/i.test(u));
-        const secilen = (tarifli.length ? tarifli : adresler).slice(0, 15);
-        const sonuc = await Promise.allSettled(secilen.map(getText));
-        for (const s of sonuc) if (s.status === "fulfilled") sayfalar.push(...locs(s.value));
+        cocuklar.push(...(tarifli.length ? tarifli : adresler));
       } else {
-        sayfalar.push(...adresler);
+        urls[kok] = adresler;
+        cocuklar.push(kok);
       }
     }
-    const tarifler = sayfalar.filter((u) => /yemek\.com\/tarif\//.test(u));
-    const liste = tarifler.length ? tarifler : sayfalar;
-    if (!liste.length) throw new Error("Sitemap'ten adres okunamadı");
-    cache = { urls: liste, at: Date.now() };
-    return liste;
-  } catch (e) {
-    if (cache.urls) return cache.urls; // eski önbellek yoksa hatayı ilet
-    throw e;
+    if (cocuklar.length) cache = { cocuklar, urls, at: Date.now() };
+    else if (!cache.cocuklar) throw new Error("Sitemap bulunamadı");
   }
+  const secilen = cache.cocuklar[Math.floor(Math.random() * cache.cocuklar.length)];
+  if (!cache.urls[secilen]) cache.urls[secilen] = locs(await getText(secilen));
+  const hepsi = cache.urls[secilen];
+  const tarifler = hepsi.filter((u) => /yemek\.com\/tarif\//.test(u));
+  return tarifler.length ? tarifler : hepsi;
 }
 
 const ENTITY = { amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " " };
@@ -185,8 +183,9 @@ module.exports = async (req, res) => {
       if (corba) return res.status(200).json(corba);
       return res.status(502).json({ hata: "Uygun bir çorba bulunamadı, tekrar dene." });
     }
-    const adresler = await tarifAdresleri();
-    for (let i = 0; i < MAX_DENEME; i++) {
+    const basla = Date.now();
+    for (let i = 0; i < MAX_DENEME && Date.now() - basla < 22000; i++) {
+      const adresler = await tarifAdresleri();
       const url = adresler[Math.floor(Math.random() * adresler.length)];
       try {
         const tarif = tarifCikar(await getText(url), url);
