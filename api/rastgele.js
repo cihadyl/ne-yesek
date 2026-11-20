@@ -107,7 +107,7 @@ function meta(html, ad) {
   return m ? temizle(m[1]) : "";
 }
 
-function tarifCikar(html, url) {
+function tarifCikar(html, url, sadeceRecipe = false) {
   const bloklar = [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
   for (const b of bloklar) {
     try {
@@ -123,7 +123,7 @@ function tarifCikar(html, url) {
     } catch (_) {}
   }
   // Yapılandırılmış veri yoksa sayfa başlığına ve açıklamasına düş
-  if (/\/tarif\//.test(url)) {
+  if (!sadeceRecipe && /\/tarif\//.test(url)) {
     const baslik = meta(html, "og:title");
     if (baslik) {
       return {
@@ -137,9 +137,54 @@ function tarifCikar(html, url) {
   return null;
 }
 
+// ---- Çorba: yemek.com/tarif/corba/ kategorisinden rastgele ----
+const CORBA = `${SITE}/tarif/corba/`;
+let corbaCache = { sayfaSayisi: 0, nav: null, at: 0 };
+
+function tarifLinkleri(html) {
+  const set = new Set();
+  for (const m of html.matchAll(/href=["'](?:https?:\/\/(?:www\.)?yemek\.com)?(\/tarif\/[a-z0-9-]+)\/?["']/gi)) {
+    set.add(SITE + m[1] + "/");
+  }
+  return set;
+}
+
+async function corbaHazirla() {
+  if (corbaCache.nav && Date.now() - corbaCache.at < CACHE_MS) return corbaCache;
+  const [s1, s2] = await Promise.all([getText(CORBA), getText(`${CORBA}sayfa/2/`)]);
+  const l1 = tarifLinkleri(s1);
+  const l2 = tarifLinkleri(s2);
+  // Her iki sayfada da geçen bağlantılar menü, kategori ve alt bilgi bağlantılarıdır; tarif değildir
+  const nav = new Set([...l1].filter((u) => l2.has(u)));
+  const sayfalar = [...s1.matchAll(/\/sayfa\/(\d+)\//g)].map((m) => +m[1]);
+  corbaCache = { sayfaSayisi: Math.max(2, ...sayfalar), nav, at: Date.now() };
+  return corbaCache;
+}
+
+async function rastgeleCorba() {
+  const { sayfaSayisi, nav } = await corbaHazirla();
+  for (let i = 0; i < MAX_DENEME; i++) {
+    const sayfa = 1 + Math.floor(Math.random() * sayfaSayisi);
+    try {
+      const html = await getText(sayfa === 1 ? CORBA : `${CORBA}sayfa/${sayfa}/`);
+      const adaylar = [...tarifLinkleri(html)].filter((u) => !nav.has(u));
+      if (!adaylar.length) continue;
+      const url = adaylar[Math.floor(Math.random() * adaylar.length)];
+      const tarif = tarifCikar(await getText(url), url, true);
+      if (tarif) return tarif;
+    } catch (_) {}
+  }
+  return null;
+}
+
 module.exports = async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   try {
+    if (req.query && req.query.tur === "corba") {
+      const corba = await rastgeleCorba();
+      if (corba) return res.status(200).json(corba);
+      return res.status(502).json({ hata: "Uygun bir çorba bulunamadı, tekrar dene." });
+    }
     const adresler = await tarifAdresleri();
     for (let i = 0; i < MAX_DENEME; i++) {
       const url = adresler[Math.floor(Math.random() * adresler.length)];
